@@ -11,11 +11,11 @@ from jobs import settings
 
 class JobsPipeline(object):
     def __init__(self):
-        self.conn = pymongo.MongoClient(settings.MONGO_HOST, settings.MONGO_PORT)
+        self.conn = pymongo.MongoClient(settings.MONGO_HOST, int(settings.MONGO_PORT))
         self.db = self.conn[settings.MONGO_DB]
 
     def process_item(self, item, spider):
-        self.db.jobs.insert({
+        self.db.jobs.save({
             "url": item["url"],
             "pubdate": item["pubdate"],
             "company": item["company"],

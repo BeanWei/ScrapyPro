@@ -54,7 +54,10 @@ ROBOTSTXT_OBEY = False
 # See https://doc.scrapy.org/en/latest/topics/downloader-middleware.html
 DOWNLOADER_MIDDLEWARES = {
    'jobs.middlewares.JobsDownloaderMiddleware': 543,
-   'jobs.middlewares.RorareUserAgent.RotateUserAgentMiddleware': 543,
+#    'scrapy.contrib.downloadermiddleware.useragent.UserAgentMiddleware' : None,
+#    'jobs.middlewares.RotateUserAgentMiddleware': 543,
+   'scrapy.contrib.downloadermiddleware.httpproxy.HttpProxyMiddleware': None,
+   'jobs.middlewares.IPProxyMiddleware': 125
 }
 
 # Enable or disable extensions
@@ -67,7 +70,7 @@ DOWNLOADER_MIDDLEWARES = {
 # See https://doc.scrapy.org/en/latest/topics/item-pipeline.html
 ITEM_PIPELINES = {
    'jobs.pipelines.JobsPipeline': 300,
-   'scrapy_redis.pipelines.RedisPipeline': 300
+#    'scrapy_redis.pipelines.RedisPipeline': 300
 }
 
 # Enable and configure the AutoThrottle extension (disabled by default)
@@ -91,16 +94,16 @@ ITEM_PIPELINES = {
 #HTTPCACHE_IGNORE_HTTP_CODES = []
 #HTTPCACHE_STORAGE = 'scrapy.extensions.httpcache.FilesystemCacheStorage'
 
-SCHEDULER = "scrapy_redis.scheduler.Scheduler"
+# SCHEDULER = "scrapy_redis.scheduler.Scheduler"
 
-SCHEDULER_PERSIST = True
+# SCHEDULER_PERSIST = True
 
-DUPEFILTER_CLASS = "scrapy_redis.dupefilter.RFPDupeFilter"
+# DUPEFILTER_CLASS = "scrapy_redis.dupefilter.RFPDupeFilter"
 
-REDIS_HOST = '127.0.0.1'
-REDIS_PORT = 6379
+# REDIS_HOST = '127.0.0.1'
+# REDIS_PORT = 6379
 
 
 MONGO_HOST = '127.0.0.1'
-MONGO_PORT = '27107'
+MONGO_PORT = '27017'
 MONGO_DB = 'test'
