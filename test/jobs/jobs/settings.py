@@ -19,7 +19,7 @@ NEWSPIDER_MODULE = 'jobs.spiders'
 #USER_AGENT = 'jobs (+http://www.yourdomain.com)'
 
 # Obey robots.txt rules
-ROBOTSTXT_OBEY = True
+ROBOTSTXT_OBEY = False
 
 # Configure maximum concurrent requests performed by Scrapy (default: 16)
 #CONCURRENT_REQUESTS = 32
@@ -52,9 +52,10 @@ ROBOTSTXT_OBEY = True
 
 # Enable or disable downloader middlewares
 # See https://doc.scrapy.org/en/latest/topics/downloader-middleware.html
-#DOWNLOADER_MIDDLEWARES = {
-#    'jobs.middlewares.JobsDownloaderMiddleware': 543,
-#}
+DOWNLOADER_MIDDLEWARES = {
+   'jobs.middlewares.JobsDownloaderMiddleware': 543,
+   'jobs.middlewares.RorareUserAgent.RotateUserAgentMiddleware': 543,
+}
 
 # Enable or disable extensions
 # See https://doc.scrapy.org/en/latest/topics/extensions.html
@@ -64,9 +65,10 @@ ROBOTSTXT_OBEY = True
 
 # Configure item pipelines
 # See https://doc.scrapy.org/en/latest/topics/item-pipeline.html
-#ITEM_PIPELINES = {
-#    'jobs.pipelines.JobsPipeline': 300,
-#}
+ITEM_PIPELINES = {
+   'jobs.pipelines.JobsPipeline': 300,
+   'scrapy_redis.pipelines.RedisPipeline': 300
+}
 
 # Enable and configure the AutoThrottle extension (disabled by default)
 # See https://doc.scrapy.org/en/latest/topics/autothrottle.html
@@ -88,3 +90,17 @@ ROBOTSTXT_OBEY = True
 #HTTPCACHE_DIR = 'httpcache'
 #HTTPCACHE_IGNORE_HTTP_CODES = []
 #HTTPCACHE_STORAGE = 'scrapy.extensions.httpcache.FilesystemCacheStorage'
+
+SCHEDULER = "scrapy_redis.scheduler.Scheduler"
+
+SCHEDULER_PERSIST = True
+
+DUPEFILTER_CLASS = "scrapy_redis.dupefilter.RFPDupeFilter"
+
+REDIS_HOST = '127.0.0.1'
+REDIS_PORT = 6379
+
+
+MONGO_HOST = '127.0.0.1'
+MONGO_PORT = '27107'
+MONGO_DB = 'test'

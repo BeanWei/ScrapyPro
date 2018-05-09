@@ -60,6 +60,11 @@ class LagouSpider(scrapy.Spider):
                     item['jobtitle'] = result['positionName']
                     item['workyear'] = result['workYear']
                     item['salary'] = result['salary']
-                    #item['demand'] = result['']
-                    yield Request(url=item['url'], meta={'item_1': item})
+                    yield Request(url=item['url'], meta={'item_1': item}, callback=self.parse_detail)
+
+    def parse_detail(self, response):
+        item = response.meta['item_1']
+        result = ("".join(response.xpath('//dd[@class="job_bt"]//text()').extract())).split("任职要求")[1]
+        item['demand'] = re.sub('[\d+\r\n\s+\.\!\/_,$%^*(+\"\')]+|[+——()?【】“”！，。？、~@#￥%……&*（）]+','',result)
+        yield item
             
