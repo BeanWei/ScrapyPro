@@ -7,12 +7,11 @@
 
 from scrapy import signals
 
-import telnetlib
-import random
+# import random
 # from scrapy.contrib.downloadermiddleware.useragent import UserAgentMiddleware
-
-# from jobs.haipproxy.client.py_cli import ProxyFetcher
-from scrapy.contrib.downloadermiddleware.httpproxy import HttpProxyMiddleware
+# import pymongo
+# from jobs.settings import MONGO_DB, MONGO_HOST, MONGO_PORT
+# from scrapy.contrib.downloadermiddleware.httpproxy import HttpProxyMiddleware
 
 
 class JobsSpiderMiddleware(object):
@@ -152,113 +151,126 @@ class JobsDownloaderMiddleware(object):
 #             request.headers.setdefault('User-Agent', ua)
 
 
-class IPProxyMiddleware(HttpProxyMiddleware):
-    pool_list = [
-        '103.74.246.124:65301',
-        '103.87.139.26:8080',
-        '110.36.234.214:8080',
-        '112.66.244.98:8641',
-        '113.121.245.134:8641',
-        '114.215.95.188:8627',
-        '114.235.3.76:8060',
-        '117.242.145.103:8080',
-        '119.28.37.58:80',
-        '120.199.64.163:8622',
-        '121.8.98.197:8939',
-        '123.119.188.220:8060',
-        '123.12.70.139:8204',
-        '138.68.231.41:8860',
-        '144.217.204.254:8840',
-        '168.0.216.92:8977',
-        '168.128.29.75:8464',
-        '180.162.228.155:8060',
-        '180.173.43.116:8716',
-        '183.23.74.53:8537',
-        '186.46.85.194:53005',
-        '190.104.245.39:8305',
-        '190.9.59.76:8298',
-        '191.102.97.99:8155',
-        '191.252.92.248:9010',
-        '194.182.74.203:8873',
-        '200.72.187.75:8108',
-        '201.245.172.157:80',
-        '201.245.201.18:9030',
-        '202.100.83.139:9044',
-        '207.148.74.8:8452',
-        '212.237.61.15:9023',
-        '217.61.98.52:8773',
-        '217.61.98.52:8981',
-        '218.91.156.188:808',
-        '219.141.168.249:8908',
-        '222.139.8.45:8060',
-        '222.16.83.18:8915',
-        '222.186.45.58:57624',
-        '222.85.22.159:61234',
-        '222.93.12.14:8118',
-        '223.146.254.91:808',
-        '27.13.214.178:61202',
-        '27.152.113.187:8118',
-        '27.204.85.159:61234',
-        '27.37.121.195:8272',
-        '27.37.121.195:8607',
-        '27.37.121.195:8766',
-        '27.37.121.195:8818',
-        '34.240.231.232:3128',
-        '35.227.26.224:3128',
-        '36.26.211.172:61202',
-        '36.59.87.19:61202',
-        '36.6.12.97:61234',
-        '36.66.37.185:8080',
-        '39.76.86.92:61202',
-        '42.237.159.179:8060',
-        '42.54.88.57:34946',
-        '43.247.68.211:3128',
-        '43.250.81.140:8080',
-        '45.226.50.4:8285',
-        '45.226.50.4:8457',
-        '45.226.50.4:9047',
-        '45.32.195.95:8498',
-        '45.32.201.221:8968',
-        '45.76.56.140:8121',
-        '45.77.88.109:8080',
-        '47.89.10.103:80',
-        '49.84.196.235:9074',
-        '49.86.24.214:8060',
-        '49.89.87.221:8888',
-        '54.223.94.193:3128',
-        '54.255.135.61:8742',
-        '54.38.51.181:3128',
-        '58.19.63.64:8724',
-        '59.33.41.87:61234',
-        '60.188.25.19:8832',
-        '60.194.11.179:8951',
-        '61.135.217.7:80',
-        '61.136.163.245:8168',
-        '61.136.163.246:8707',
-        '62.231.245.5:8626',
-        '66.70.147.195:8464',
-        '82.200.205.49:8957',
-        '83.212.106.250:8159',
-        '83.212.106.250:8293',
-        '83.212.106.250:8307',
-        '89.29.26.77:3128',
-        '91.239.55.129:8080',
-        '93.190.142.240:8873',
-        '94.253.127.217:8883',
-        '94.65.214.133:8799'
-    ]
+# class IPProxyMiddleware(HttpProxyMiddleware):
+    
 
-    def __init__(self, ip=''):
-        self.ip = ip
+#     def __init__(self, ip=''):
+#         self.ip = ip
+
+#     def process_request(self, request, spider):
+#         client = pymongo.MongoClient(host=MONGO_HOST, port=MONGO_PORT)
+#         db = client[MONGO_DB]
+#         thisIP = random.choice([proxies for proxies in db.ippool.find()])
+#         ip, port = thisIP['ip'].split(':')
+#         print(ip)
+#         request.meta['proxy'] = "http://" + thisIP['ip']
+
+import re
+import random
+import base64
+import logging
+import os
+import requests
+import json
+
+log = logging.getLogger('scrapy.proxies')
+
+
+class Mode:
+    RANDOMIZE_PROXY_EVERY_REQUESTS, RANDOMIZE_PROXY_ONCE, SET_CUSTOM_PROXY = range(3)
+
+
+class RandomProxy(object):
+    def __init__(self, settings):
+        self.mode = settings.get('PROXY_MODE')
+        self.proxy_list = settings.get('PROXY_LIST')
+        self.chosen_proxy = ''
+
+        if self.mode == Mode.RANDOMIZE_PROXY_EVERY_REQUESTS or self.mode == Mode.RANDOMIZE_PROXY_ONCE:
+            if self.proxy_list is None:
+                raise KeyError('PROXY_LIST setting is missing')
+            if os.path.isfile(self.proxy_list):
+                self.proxies = {}
+                fin = open(self.proxy_list)
+                try:
+                    for line in fin.readlines():
+                        parts = re.match('(\w+://)([^:]+?:[^@]+?@)?(.+)', line.strip())
+                        if not parts:
+                            continue
+
+                        # Cut trailing @
+                        if parts.group(2):
+                            user_pass = parts.group(2)[:-1]
+                        else:
+                            user_pass = ''
+
+                        self.proxies[parts.group(1) + parts.group(3)] = user_pass
+                finally:
+                    fin.close()
+                if self.mode == Mode.RANDOMIZE_PROXY_ONCE:
+                    self.chosen_proxy = random.choice(list(self.proxies.keys()))
+            else:
+                r = requests.get('http://127.0.0.1:8000/?types=0&count=5&country=国内')
+                ip_ports = json.loads(r.text)
+                print(ip_ports)
+                ippool = ["http://{0}:{1}".format(ip[0], ip[1]) for ip in ip_ports]
+                if self.mode == Mode.RANDOMIZE_PROXY_ONCE:
+                    self.chosen_proxy = random.choice(list(self.proxies.keys()))
+        elif self.mode == Mode.SET_CUSTOM_PROXY:
+            custom_proxy = settings.get('CUSTOM_PROXY')
+            self.proxies = {}
+            parts = re.match('(\w+://)([^:]+?:[^@]+?@)?(.+)', custom_proxy.strip())
+            if not parts:
+                raise ValueError('CUSTOM_PROXY is not well formatted')
+
+            if parts.group(2):
+                user_pass = parts.group(2)[:-1]
+            else:
+                user_pass = ''
+
+            self.proxies[parts.group(1) + parts.group(3)] = user_pass
+            self.chosen_proxy = parts.group(1) + parts.group(3)
+
+    @classmethod
+    def from_crawler(cls, crawler):
+        return cls(crawler.settings)
 
     def process_request(self, request, spider):
-        # fetcher = ProxyFetcher('zhihu', strategy='greedy')
-        # thisIP = random.choice(fetcher.get_proxies())
-        thisIP = random.choice(self.pool_list)
-        ip, port = thisIP.split(':')
-        try:
-            telnetlib.Telnet(ip, port, timeout=2)
-            print(ip)
-            request.meta['proxy'] = "http://" + thisIP
-        except:
-            pass
+        # Don't overwrite with a random one (server-side state for IP)
+        if 'proxy' in request.meta:
+            if request.meta["exception"] is False:
+                return
+        request.meta["exception"] = False
+        if len(self.proxies) == 0:
+            raise ValueError('All proxies are unusable, cannot proceed')
+
+        if self.mode == Mode.RANDOMIZE_PROXY_EVERY_REQUESTS:
+            proxy_address = random.choice(list(self.proxies.keys()))
+        else:
+            proxy_address = self.chosen_proxy
+
+        proxy_user_pass = self.proxies[proxy_address]
+
+        if proxy_user_pass:
+            request.meta['proxy'] = proxy_address
+            basic_auth = 'Basic ' + base64.b64encode(proxy_user_pass.encode()).decode()
+            request.headers['Proxy-Authorization'] = basic_auth
+        else:
+            log.debug('Proxy user pass not found')
+        log.debug('Using proxy <%s>, %d proxies left' % (
+                proxy_address, len(self.proxies)))
+
+    def process_exception(self, request, exception, spider):
+        if 'proxy' not in request.meta:
+            return
+        if self.mode == Mode.RANDOMIZE_PROXY_EVERY_REQUESTS or self.mode == Mode.RANDOMIZE_PROXY_ONCE:
+            proxy = request.meta['proxy']
+            try:
+                del self.proxies[proxy]
+            except KeyError:
+                pass
+            request.meta["exception"] = True
+            if self.mode == Mode.RANDOMIZE_PROXY_ONCE:
+                self.chosen_proxy = random.choice(list(self.proxies.keys()))
+            log.info('Removing failed proxy <%s>, %d proxies left' % (
+                proxy, len(self.proxies)))

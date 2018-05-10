@@ -53,12 +53,14 @@ ROBOTSTXT_OBEY = False
 # Enable or disable downloader middlewares
 # See https://doc.scrapy.org/en/latest/topics/downloader-middleware.html
 DOWNLOADER_MIDDLEWARES = {
-   'jobs.middlewares.JobsDownloaderMiddleware': 543,
+    'jobs.middlewares.JobsDownloaderMiddleware': 543,
 #    'scrapy.contrib.downloadermiddleware.useragent.UserAgentMiddleware' : None,
 #    'jobs.middlewares.RotateUserAgentMiddleware': 543,
-   'scrapy.contrib.downloadermiddleware.httpproxy.HttpProxyMiddleware': None,
-   'jobs.middlewares.IPProxyMiddleware': 125
+    'scrapy.downloadermiddlewares.retry.RetryMiddleware': 90,
+    'scrapy_proxies.RandomProxy': 100,
+    'scrapy.downloadermiddlewares.httpproxy.HttpProxyMiddleware': 110
 }
+
 
 # Enable or disable extensions
 # See https://doc.scrapy.org/en/latest/topics/extensions.html
@@ -94,6 +96,20 @@ ITEM_PIPELINES = {
 #HTTPCACHE_IGNORE_HTTP_CODES = []
 #HTTPCACHE_STORAGE = 'scrapy.extensions.httpcache.FilesystemCacheStorage'
 
+#=================代理设置scrapy_proxies=============================
+# Retry many times since proxies often fail
+RETRY_TIMES = 10
+# Retry on most error codes since proxies fail for different reasons
+RETRY_HTTP_CODES = [500, 503, 504, 400, 403, 404, 408]
+
+PROXY_LIST = '/path/to/proxy/list.txt'
+# Proxy mode
+# 0 = Every requests have different proxy
+# 1 = Take only one proxy from the list and assign it to every requests
+# 2 = Put a custom proxy to use in the settings
+PROXY_MODE = 0
+#=================scrapy_proxies=============================
+
 # SCHEDULER = "scrapy_redis.scheduler.Scheduler"
 
 # SCHEDULER_PERSIST = True
@@ -105,5 +121,5 @@ ITEM_PIPELINES = {
 
 
 MONGO_HOST = '127.0.0.1'
-MONGO_PORT = '27017'
+MONGO_PORT = 27017
 MONGO_DB = 'test'
