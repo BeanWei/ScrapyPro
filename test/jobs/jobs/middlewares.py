@@ -6,8 +6,9 @@
 # https://doc.scrapy.org/en/latest/topics/spider-middleware.html
 
 from scrapy import signals
-import redis
+import requests
 import random
+import redis
 # from scrapy.contrib.downloadermiddleware.useragent import UserAgentMiddleware
 
 
@@ -164,13 +165,40 @@ class JobsDownloaderMiddleware(object):
 #         request.meta['proxy'] = "http://" + thisIP['ip']
 
 class DynamicProxyMiddleware(object):
+    # def process_request(self, request, spider):
+    #     redis_db = redis.StrictRedis(
+    #         host= '127.0.0.1', 
+    #         port= 6379, 
+    #         password= '',
+    #         db= 6
+    #     ) 
+    #     proxy = random.choice(list(redis_db.smembers("hq-proxies:proxy_pool"))).decode('utf-8')
+    #     spider.logger.debug('使用代理[%s]访问[%s]' % (proxy, request.url))
+    #     request.meta['proxy'] = proxy
+    def get_proxy(self):
+        return requests.get("http://127.0.0.1:5010/get/").content
+
+    def delete_proxy(self, proxy):
+        requests.get("http://127.0.0.1:5010/delete/?proxy={}".format(proxy))
+
+    def getHtml(self):
+
+        proxy = self.get_proxy()
+        try:
+            html = requests.get('https://www.example.com', proxies={"http": "http://{}".format(proxy)})
+            # 使用代理访问
+            return proxy
+        except Exception:
+            self.delete_proxy(proxy)
+            return None
+
     def process_request(self, request, spider):
-        redis_db = redis.StrictRedis(
-            host= '127.0.0.1', 
-            port= 6379, 
-            password= '',
-            db= 6
-        ) 
-        proxy = random.choice(list(redis_db.smembers("hq-proxies:proxy_pool"))).decode('utf-8')
-        spider.logger.debug('使用代理[%s]访问[%s]' % (proxy, request.url))
-        request.meta['proxy'] = proxy
+        proxy = self.getHtml()
+        while True:
+            if proxy:
+                request.meta['proxy'] = "http://{}".format(proxy.decode('utf-8')) 
+                break
+            else: 
+                self.getHtml()
+
+    
